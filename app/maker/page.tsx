@@ -74,7 +74,8 @@ export default function Home() {
       },
     });
     const data = await response.json();
-    return data.items[0]?.snippet?.title;
+    console.log("Video data:", data);
+    return [data.items[0]?.snippet?.title, data.items[0]?.snippet?.thumbnails?.standard?.url || ""];
   }
 
   async function getVideoDuration(videoId: string) {
@@ -258,9 +259,16 @@ export default function Home() {
                           : "bg-gray-700 text-gray-200"
                       }`}
                     >
-                      <span className="truncate">{video[1]}</span>
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <img
+                          src={video[2]}
+                          alt={video[1]}
+                          className="w-16 h-10 object-cover rounded shadow"
+                        />
+                        <span className="truncate">{video[1]}</span>
+                      </div>
                       {index === videoQueueIndex && (
-                        <span className="ml-2 text-xs bg-white text-green-700 px-2 py-0.5 rounded">Now Playing</span>
+                        <span className="ml-2 text-xs bg-white text-green-700 px-2 py-0.5 rounded whitespace-nowrap">Now Playing</span>
                       )}
                     </div>
                   ))}
@@ -290,11 +298,12 @@ export default function Home() {
                 if (videoId) {
                   let splitID = videoId.split("v=")[1] || videoId;
                   splitID = splitID.split("&")[0];
-                  let videoTitle = await getVideoTitle(splitID);
+                  let vidDetails = await getVideoTitle(splitID);
+                  let videoTitle = vidDetails[0];
+                  let videoThumbnail = vidDetails[1];
                   let videoDuration = await getVideoDuration(splitID);
                   setCurrentVideoLength(videoDuration);
-                  videoTitle = videoTitle; // + videoDuration;
-                  setVideoQueue([...videoQueue, [splitID,videoTitle]]);
+                  setVideoQueue([...videoQueue, [splitID,videoTitle, videoThumbnail]]);
                   setVideoId("");
                 }
               }}
