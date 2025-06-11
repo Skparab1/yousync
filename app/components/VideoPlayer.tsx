@@ -12,9 +12,10 @@ import YouTube, { YouTubeProps } from 'react-youtube';
 type VideoPlayerProps = {
     videoID: string;
     sessionID: string;
+    simple: boolean;
 };
 
-export default function VideoPlayer({ videoID, sessionID }: VideoPlayerProps) {
+export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerProps) {
 
     const playerRef = React.useRef<any>(null);
     const sessionIDRef = React.useRef<string>(sessionID);
@@ -169,16 +170,34 @@ export default function VideoPlayer({ videoID, sessionID }: VideoPlayerProps) {
     }, []);
 
     return (
-        <div className='text-center'>
-            <div className="bg-gray-700 text-white p-4 rounded mb-4">
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50">
+            {!simple ? (
+            <>
+                <div className="bg-gray-700 text-white p-4 rounded mb-4">
                 <h1 className="text-2xl ">Session: {sessionID}</h1>
-            </div>
-            <div className="bg-gray-700 text-white p-4 rounded mb-4">
+                </div>
+                <div className="bg-gray-700 text-white p-4 rounded mb-4">
                 <h1 className="text-2xl ">Video: {videoID}</h1>
+                </div>
+                <div className="flex-1 w-full flex items-center justify-center">
+                    <YouTube videoId={videoID} opts={{ ...opts, playerVars: { ...opts.playerVars, controls: 0 } }} onReady={onPlayerReady} />
+                </div>
+            </>
+            ) : (
+            <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
+                <YouTube
+                    videoId={videoID}
+                    opts={{
+                        ...opts,
+                        width: "100%",
+                        height: "100%",
+                        playerVars: { ...opts.playerVars, controls: 0 }
+                    }}
+                    className="w-screen h-screen"
+                    onReady={onPlayerReady}
+                />
             </div>
-            <YouTube videoId={videoID} opts={{ ...opts, playerVars: { ...opts.playerVars, controls: 0 } }} onReady={onPlayerReady} />
-            {/* <Button onClick={playVideo}>Play Video</Button>
-            <Button onClick={pauseVideo}>Pause Video</Button> */}
-            </div>
+            )}
+        </div>
     );
 }

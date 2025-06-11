@@ -1,11 +1,11 @@
 "use client";
 import Image from "next/image";
 
-import VideoPlayer from "./components/VideoPlayer";
+import VideoPlayer from "../components/VideoPlayer";
 
 import { useEffect, useState } from "react";
 
-import supabase from "./utils/supabase";
+import supabase from "../utils/supabase";
 
 export default function Home() {
 
@@ -33,12 +33,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        
-        <VideoPlayer videoID={videoId} sessionID={sessionId ?? ""} simple={false} />
-
-      </main>
+    <div className="fixed inset-0 flex items-center justify-center bg-black">
+      <VideoPlayer videoID={videoId} sessionID={sessionId ?? ""} simple={true} />
     </div>
   );
 }
