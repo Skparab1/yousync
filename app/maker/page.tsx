@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { FaPlay, FaPause, FaSync, FaCheckCircle } from "react-icons/fa";
 import supabase from "../utils/supabase";
@@ -431,21 +430,23 @@ export default function Home() {
             </div>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center min-h-[60vh]">
-          <input
-            type="text"
-            placeholder="Enter Video ID"
-            value={videoId}
-            onChange={(e) => setVideoId(e.target.value)}
-            className="px-4 py-2 border border-gray-700 rounded bg-[#232b3a] text-white"
-          />
-          <button
-            className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded shadow"
-            onClick={startSession}
-          >
-            Start Session
-          </button>
-        </div>
+        <>
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center min-h-[60vh]">
+            <input
+              type="text"
+              placeholder="Enter Video ID"
+              value={videoId}
+              onChange={(e) => setVideoId(e.target.value)}
+              className="px-4 py-2 border border-gray-700 rounded bg-[#232b3a] text-white"
+            />
+            <button
+              className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded shadow"
+              onClick={startSession}
+            >
+              Start Session
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
