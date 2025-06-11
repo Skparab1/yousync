@@ -117,7 +117,7 @@ export default function Home() {
   async function startSession() {
     let splitID = videoId.split("v=")[1] || videoId;
     splitID = splitID.split("&")[0];
-    const { data, error } = await supabase.from('sessions').insert({ videoID: splitID }).select('id').single();
+    const { data } = await supabase.from('sessions').insert({ videoID: splitID }).select('id').single();
     if (data) {
       setSessionId(data.id);
       window.location.href = `/maker?session=${data.id}`;
