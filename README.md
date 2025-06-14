@@ -1,3 +1,26 @@
+## Youtube Sync ([yousync.skparab1.com](https://yousync.skparab1.com))
+
+<img width="1312" alt="Screenshot 2025-06-14 at 1 02 45 PM" src="https://github.com/user-attachments/assets/ffeb6c28-5ac7-4aef-8339-76a925d34f3b" />
+
+## Overview
+* Sync youtube videos among devices
+* Multiple simultaneous sessions (No need for self hosting)
+* Precise enough for surround sound with minimal interference
+
+## Stack
+* Next.js + Typescript + Tailwind
+* Supabase Realtime
+
+<img width="742" alt="Screenshot 2025-06-14 at 12 59 47 PM" src="https://github.com/user-attachments/assets/9e2066db-8990-4d07-a62e-69b00b42277e" />
+
+## Controls
+* Central time clock (adjustable)
+* Playback controls
+* Video queue
+* Embedded client
+
+<br><br><br><br><br><br><br>
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
