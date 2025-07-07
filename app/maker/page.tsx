@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FaPlay, FaPause, FaSync, FaCheckCircle } from "react-icons/fa";
+import { FaPlay, FaPause, FaSync, FaCheckCircle, FaRegDotCircle, FaStepBackward } from "react-icons/fa";
+import { IoMdSkipForward } from "react-icons/io";
 import supabase from "../utils/supabase";
 
 export default function Home() {
@@ -12,8 +13,10 @@ export default function Home() {
   const [videoQueue, setVideoQueue] = useState<string[][]>([]);
   const [videoQueueIndex, setVideoQueueIndex] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [videoStatus, setVideoStatus] = useState<string>("Not Playing");
+  const [videoStatus, setVideoStatus] = useState<string>("Loaded");
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
+
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -28,6 +31,57 @@ export default function Home() {
         .single()
         .then(({ data }) => {
           setVideoId(data?.videoID || "ip3AKeUOG-o");
+
+          // hang on, this will need a bit of stuff
+
+          const fetchQueue = async () => {
+            const queue = data?.videoQueue || [];
+            const details = await Promise.all(
+              queue.map(async (vidID: string) => {
+                if (vidID.includes("psduayspkuspczikkyli")) {
+                  const rawName = vidID.split("psduayspkuspczikkyli.supabase.co/storage/v1/object/public/videos/")[1];
+                  const fileName = rawName
+                    ? rawName
+                      .split("_")
+                      .slice(0, -1)
+                      .join("_")
+                    : "";
+                  const videoTitle = decodeURIComponent(fileName);
+
+                  let videoThumbnail = "";
+                  if (
+                  fileName &&
+                  (
+                    fileName.toLowerCase().endsWith(".mp4") ||
+                    fileName.toLowerCase().endsWith(".mov") ||
+                    fileName.toLowerCase().endsWith(".webm") ||
+                    fileName.toLowerCase().endsWith(".mkv")
+                  )
+                  ) {
+                    videoThumbnail = "https://media.istockphoto.com/id/1419998212/vector/video-tape-isolated-vector-icon.jpg?s=612x612&w=0&k=20&c=HUInrych-9LyGRWVFzj08ELVgeE__rwa2IIrd7AaW_4=";
+                  } else {
+                    videoThumbnail = "https://www.creativefabrica.com/wp-content/uploads/2020/03/16/CD-icon-vector-Graphics-3664529-1.jpg";
+                  }
+                  return [vidID, videoTitle, videoThumbnail];
+                } else {
+                  const [title, thumbnail] = await getVideoTitle(vidID);
+                  return [vidID, title, thumbnail];
+                }
+              })
+            );
+            setVideoQueue(details);
+            };
+          fetchQueue();
+
+          for (let i = 0; i < data?.videoQueue.length; i++) {
+            // console.log("Checking videoQueue item:", data.videoQueue[i], "against videoID:", data.videoID);
+            if (data.videoQueue[i] == data.videoID) {
+              setVideoQueueIndex(i);
+              getVideoDuration(data.videoID).then((duration) => {
+                setCurrentVideoLength(duration);
+              });
+            }
+          }
         });
     }
   }, []);
@@ -117,7 +171,7 @@ export default function Home() {
   async function startSession() {
     let splitID = videoId.split("v=")[1] || videoId;
     splitID = splitID.split("&")[0];
-    const { data } = await supabase.from('sessions').insert({ videoID: splitID }).select('id').single();
+    const { data } = await supabase.from('sessions').insert({ videoID: splitID, videoQueue: [splitID] }).select('id').single();
     if (data) {
       setSessionId(data.id);
       window.location.href = `/maker?session=${data.id}`;
@@ -148,8 +202,37 @@ export default function Home() {
     stopStopwatch();
     setTime(0);
 
+    await supabase.from('sessions').update({ videoID: splitID, numDevices: 0 }).eq('id', sessionId);
+  }
+
+
+  async function prevVideo() {
+    // If queue is empty, do nothing
+    if (videoQueue.length === 0) return;
+
+    // Calculate next index (cycle through queue)
+    let nextIndex = videoQueueIndex === null ? 0 : videoQueueIndex - 1;
+    if (nextIndex < 0) nextIndex = videoQueue.length - 1;
+
+    // Update queue index first
+    setVideoQueueIndex(nextIndex);
+
+    setVideoStatus("Loaded");
+
+    // Get video ID from queue
+    let splitID = videoQueue[nextIndex][0].split("v=")[1] || videoQueue[nextIndex][0];
+    splitID = splitID.split("&")[0];
+
+    let videoDuration = await getVideoDuration(splitID);
+    setCurrentVideoLength(videoDuration);
+
+    setVideoId(splitID);
+    stopStopwatch();
+    setTime(0);
+
     await supabase.from('sessions').update({ videoID: splitID }).eq('id', sessionId);
   }
+
 
 
   async function onSongFinish() {
@@ -242,34 +325,52 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-[#181f2a] rounded-xl shadow-lg p-6 flex flex-col gap-4 items-center">
-            <h2 className="text-lg font-semibold mb-2">Playback Controls</h2>
+            <div className="bg-[#181f2a] rounded-xl shadow-lg p-6 flex flex-col gap-4 items-center">
             <div className="flex gap-4 w-full justify-center">
               <button
-                className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg shadow text-lg"
-                onClick={startPlay}
-                title="Play"
+              className="flex items-center gap-2 px-6 py-2 bg-secondary-600 hover:bg-secondary-700 rounded-lg shadow text-lg transition-colors"
+              onClick={prevVideo}
+              title="Previous Video"
+              style={{ backgroundColor: "#6c757d", color: "#fff" }} // Bootstrap secondary
               >
-                <FaPlay /> Play
+              <FaStepBackward />
               </button>
               <button
-                className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg shadow text-lg"
-                onClick={endPlay}
-                title="Pause"
+              className="flex items-center gap-2 px-6 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg shadow text-lg transition-colors"
+              onClick={startPlay}
+              title="Play"
+              style={{ backgroundColor: "#007bff", color: "#fff" }} // Bootstrap primary
               >
-                <FaPause /> Pause
+              <FaPlay />
               </button>
               <button
-                className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow text-lg"
-                onClick={reSync}
-                title="Resync"
+              className="flex items-center gap-2 px-6 py-2 bg-danger-600 hover:bg-danger-700 rounded-lg shadow text-lg transition-colors"
+              onClick={endPlay}
+              title="Pause"
+              style={{ backgroundColor: "#dc3545", color: "#fff" }} // Bootstrap danger
               >
-                <FaSync /> Resync
+              <FaPause />
+              </button>
+              <button
+              className="flex items-center gap-2 px-6 py-2 bg-warning-600 hover:bg-warning-700 rounded-lg shadow text-lg transition-colors"
+              onClick={reSync}
+              title="Resync"
+              style={{ backgroundColor: "#ffc107", color: "#212529" }} // Bootstrap warning
+              >
+              <FaSync />
+              </button>
+              <button
+              className="flex items-center gap-2 px-6 py-2 bg-secondary-600 hover:bg-secondary-700 rounded-lg shadow text-lg transition-colors"
+              onClick={changeVideo}
+              title="Next Video"
+              style={{ backgroundColor: "#6c757d", color: "#fff" }} // Bootstrap secondary
+              >
+              <IoMdSkipForward />
               </button>
             </div>
-          </div>
+            </div>
 
-            <div className="bg-[#181f2a] rounded-xl shadow-lg p-6 flex flex-col gap-4">
+          <div className="bg-[#181f2a] rounded-xl shadow-lg p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-semibold">Video Queue</h2>
               <div className="flex items-center gap-4">
@@ -282,14 +383,27 @@ export default function Home() {
                 className="accent-cyan-500 w-4 h-4"
                 />
               </label>
-              <button
-                className="px-4 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm shadow"
-                onClick={changeVideo}
-              >
-                Next Video
-              </button>
               </div>
             </div>
+
+            {/* <table className="w-full text-left text-sm text-gray-300 mb-4 border-separate border-spacing-y-1">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1">#</th>
+                  <th className="px-2 py-1">Title</th>
+                  <th className="px-2 py-1">ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {videoQueue.map((video, idx) => (
+                  <tr key={idx} className={idx === videoQueueIndex ? "bg-cyan-900/40" : ""}>
+                    <td className="px-2 py-1">{idx + 1}</td>
+                    <td className="px-2 py-1 truncate max-w-xs">{video[1]}</td>
+                    <td className="px-2 py-1 font-mono text-xs">{video[0]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table> */}
 
             <div className="flex flex-col gap-2">
               {videoQueue.length === 0 && (
@@ -303,17 +417,31 @@ export default function Home() {
                     setVideoStatus("Loaded");
 
                     // Get video ID from queue
-                    let splitID = videoQueue[index][0].split("v=")[1] || videoQueue[index][0];
-                    splitID = splitID.split("&")[0];
+                    if (video[0].includes("psduayspkuspczikkyli")) {
+                      const media = document.createElement('video');
+                      media.src = video[0];
+                      media.preload = "metadata";
+                      media.onloadedmetadata = () => {
+                        setCurrentVideoLength(Math.round(media.duration) || 0);
+                        setVideoId(video[0]);
+                        stopStopwatch();
+                        setTime(0);
+                      };
+                      console.log("Video ID is sourced from: ", video[0]);
+                      await supabase.from('sessions').update({ videoID: video[0] }).eq('id', sessionId);
+                    } else {
+                      let splitID = videoQueue[index][0].split("v=")[1] || videoQueue[index][0];
+                      splitID = splitID.split("&")[0];
 
-                    let videoDuration = await getVideoDuration(splitID);
-                    setCurrentVideoLength(videoDuration);
+                      let videoDuration = await getVideoDuration(splitID);
+                      setCurrentVideoLength(videoDuration);
 
-                    setVideoId(splitID);
-                    stopStopwatch();
-                    setTime(0);
+                      setVideoId(splitID);
+                      stopStopwatch();
+                      setTime(0);
 
-                    await supabase.from('sessions').update({ videoID: splitID }).eq('id', sessionId);
+                      await supabase.from('sessions').update({ videoID: splitID }).eq('id', sessionId);
+                    }
                   }}
                   
                   className={`flex items-center gap-4 px-4 py-3 rounded-lg border-2 transition-all ${
@@ -336,12 +464,20 @@ export default function Home() {
                       title="Remove from queue"
                       onClick={() => {
                         setVideoQueue(prev => prev.filter((_, i) => i !== index));
+                        supabase
+                          .from('sessions')
+                          .update({ videoQueue: videoQueue.map(v => v[0]).filter((_, i) => i !== index) })
+                          .eq('id', sessionId)
+                          .then(() => {
+                            console.log("Video removed from queue:", video[0]);
+                          });
+
                         // Adjust queue index if needed
                         setVideoQueueIndex(prev => {
-                        if (prev === null) return null;
-                        if (index < prev) return prev - 1;
-                        if (index === prev) return null;
-                        return prev;
+                          if (prev === null) return null;
+                          if (index < prev) return prev - 1;
+                          if (index === prev) return null;
+                          return prev;
                         });
                       }}
                       >
@@ -370,6 +506,11 @@ export default function Home() {
                       <FaSync className="text-purple-400" /> Resyncing
                     </span>
                     )}
+                    {videoStatus === "Not Playing" && (
+                    <span className="flex items-center gap-1 text-yellow-400 font-semibold text-xs">
+                      <FaRegDotCircle className="text-purple-400" /> Not Playing
+                    </span>
+                    )}
                   </>
                   )}
                 </div>
@@ -382,30 +523,105 @@ export default function Home() {
             onSubmit={async e => {
               e.preventDefault();
               if (videoId) {
-                let splitID = videoId.split("v=")[1] || videoId;
-                splitID = splitID.split("&")[0];
-                let vidDetails = await getVideoTitle(splitID);
-                let videoTitle = vidDetails[0];
-                let videoThumbnail = vidDetails[1];
-                setVideoQueue([...videoQueue, [splitID, videoTitle, videoThumbnail]]);
-                setVideoId("");
-              }
-            }}
-          >
+                if (videoId.includes("psduayspkuspczikkyli")){
+                  const splitID = videoId;
+                  const rawName = videoId.split("psduayspkuspczikkyli.supabase.co/storage/v1/object/public/videos/")[1];
+                  const fileName = rawName
+                    ? rawName
+                      .split("_")
+                      .slice(0, -1)
+                      .join("_")
+                    : "";
+                  const videoTitle = decodeURIComponent(fileName);
+                  let videoThumbnail = "";
+                  if (
+                  fileName &&
+                  (
+                    fileName.toLowerCase().endsWith(".mp4") ||
+                    fileName.toLowerCase().endsWith(".mov") ||
+                    fileName.toLowerCase().endsWith(".webm") ||
+                    fileName.toLowerCase().endsWith(".mkv")
+                  )
+                  ) {
+                    videoThumbnail = "https://media.istockphoto.com/id/1419998212/vector/video-tape-isolated-vector-icon.jpg?s=612x612&w=0&k=20&c=HUInrych-9LyGRWVFzj08ELVgeE__rwa2IIrd7AaW_4=";
+                  } else {
+                    videoThumbnail = "https://www.creativefabrica.com/wp-content/uploads/2020/03/16/CD-icon-vector-Graphics-3664529-1.jpg";
+                  }      
+                  setVideoQueue([...videoQueue, [splitID, videoTitle, videoThumbnail]]);
+                  setVideoId("");
+                  supabase
+                    .from('sessions')
+                    .update({ videoQueue: [...videoQueue.map(v => v[0]), splitID] })
+                    .eq('id', sessionId)
+                    .then(() => {
+                    console.log("Video added to queue:", splitID);
+                  })
+                } else {
+                  let splitID = videoId.split("v=")[1] || videoId;
+                  splitID = splitID.split("&")[0];
+                  const vidDetails = await getVideoTitle(splitID);
+                  const videoTitle = vidDetails[0];
+                  const videoThumbnail = vidDetails[1];
+                  setVideoQueue([...videoQueue, [splitID, videoTitle, videoThumbnail]]);
+                  setVideoId("");
+                  supabase
+                    .from('sessions')
+                    .update({ videoQueue: [...videoQueue.map(v => v[0]), splitID] })
+                    .eq('id', sessionId)
+                    .then(() => {
+                    console.log("Video added to queue:", splitID);
+                  })
+                }
+                }
+              }}
+            >
             <input
               type="text"
               placeholder="Enter Video ID or URL"
               value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
+              onChange={(e) => {setVideoId(e.target.value);}}
               className="flex-1 px-4 py-2 border border-gray-700 rounded bg-[#232b3a] text-white"
+            />
+            <input
+              type="file"
+              accept="video/*,audio/*"
+              className="flex-1 px-2 py-2 border border-gray-700 rounded bg-[#232b3a] text-white"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setIsUploading(true);
+
+                const fileName = `${file.name}_${Date.now()}`;
+                
+                await supabase.storage
+                  .from("videos")
+                  .upload(
+                    fileName,
+                    file
+                  );
+
+                const { data: publicUrlData } = supabase.storage.from('public-bucket').getPublicUrl("videos/" + fileName);
+
+                const fileURL = publicUrlData.publicUrl.replace("public-bucket/", "");
+
+                setVideoId(fileURL);
+
+                setIsUploading(false);
+              }}
             />
             <button
               type="submit"
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow transition"
+              className={`px-6 py-2 rounded shadow transition ${
+              isUploading
+                ? "bg-green-900 text-gray-300 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+              disabled={isUploading}
             >
               Add to Queue
             </button>
-          </form>
+            </form>
 
             <div className="bg-[#181f2a] rounded-xl shadow-lg p-4 text-center flex flex-col gap-4 items-center">
             <div className="flex flex-row items-center justify-between w-full mb-2">

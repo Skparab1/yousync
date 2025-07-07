@@ -13,9 +13,10 @@ type VideoPlayerProps = {
     videoID: string;
     sessionID: string;
     simple: boolean;
+    volume: number;
 };
 
-export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerProps) {
+export default function VideoPlayer({ videoID, sessionID, simple, volume }: VideoPlayerProps) {
 
     const playerRef = React.useRef<any>(null);
     const sessionIDRef = React.useRef<string>(sessionID);
@@ -64,7 +65,10 @@ export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerP
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-
+    const videoIDRef = React.useRef(videoID);
+    useEffect(() => {
+        videoIDRef.current = videoID;
+    }, [videoID]);
 
     useEffect(() => {
         const channel = supabase
@@ -147,9 +151,9 @@ export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerP
                 },
                 async (payload: any) => {
                     console.log("I got a payload:", payload);
-                    console.log("Current session ID:", videoID, "Payload session ID:", payload.new.videoID);
-                    if (videoID !== payload.new.videoID) {
-                    location.reload();
+                    console.log("Current session ID:", videoIDRef.current, "Payload session ID:", payload.new.videoID);
+                    if (videoIDRef.current !== payload.new.videoID) {
+                        location.reload();
                     }
                 }
             )
@@ -169,6 +173,13 @@ export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerP
         };
     }, []);
 
+    useEffect(() => {
+        if (playerRef.current) {
+            playerRef.current.setVolume(volume);
+        }
+    }, [volume]);
+
+    
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50">
             {!simple ? (
@@ -180,7 +191,10 @@ export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerP
                 <h1 className="text-2xl ">Video: {videoID}</h1>
                 </div>
                 <div className="flex-1 w-full flex items-center justify-center">
-                    <YouTube videoId={videoID} opts={{ ...opts, playerVars: { ...opts.playerVars, controls: 0 } }} onReady={onPlayerReady} />
+                    <YouTube videoId={videoID} opts={{ ...opts, playerVars: { ...opts.playerVars, controls: 0 } }} onReady={(event) => {
+                        onPlayerReady(event);
+                        event.target.setVolume(volume);
+                    }} />
                 </div>
             </>
             ) : (
@@ -194,7 +208,10 @@ export default function VideoPlayer({ videoID, sessionID, simple }: VideoPlayerP
                         playerVars: { ...opts.playerVars, controls: 0 }
                     }}
                     className="w-screen h-screen"
-                    onReady={onPlayerReady}
+                    onReady={(event) => {
+                        onPlayerReady(event);
+                        event.target.setVolume(volume);
+                    }}
                 />
             </div>
             )}
