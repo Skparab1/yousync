@@ -817,34 +817,32 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center min-h-[60vh]">
-            <input
-              type="text"
-              placeholder="Enter Video ID"
-              value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
-              className="px-4 py-2 rounded"
-              style={{
-                background: colors.inputBg,
-                border: `1.5px solid ${colors.inputBorder}`,
-                color: colors.inputText,
-                outline: "none",
-              }}
-            />
-            <button
-              className="px-6 py-2 rounded shadow"
-              style={{
-                background: colors.btn,
-                color: colors.btnTextLight,
-                border: "none",
-              }}
-              onClick={startSession}
-            >
-              Start Session
-            </button>
-          </div>
-        </>
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center min-h-[60vh]">
+          <input
+            type="text"
+            placeholder="Enter Video ID"
+            value={videoId}
+            onChange={(e) => setVideoId(e.target.value)}
+            className="px-4 py-2 rounded"
+            style={{
+              background: colors.inputBg,
+              border: `1.5px solid ${colors.inputBorder}`,
+              color: colors.inputText,
+              outline: "none",
+            }}
+          />
+          <button
+            className="px-6 py-2 rounded shadow"
+            style={{
+              background: colors.btn,
+              color: colors.btnTextLight,
+              border: "none",
+            }}
+            onClick={startSession}
+          >
+            Start Session
+          </button>
+        </div>
       )}
     </div>
   );
