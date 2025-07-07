@@ -6,6 +6,7 @@
 * Sync youtube videos among devices
 * Multiple simultaneous sessions (No need for self hosting)
 * Precise enough for surround sound with minimal interference
+* upload custom video and audio files
 
 ## Stack
 * Next.js + Typescript + Tailwind
