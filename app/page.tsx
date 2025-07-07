@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 
 import VideoPlayer from "./components/VideoPlayer";
 
@@ -24,7 +23,7 @@ export default function Home() {
         .select('*')
         .eq('id', session)
         .single()
-        .then(({ data, error }) => {
+        .then(({ data }) => {
           console.log("Session data:", data);
 
           setVideoId(data?.videoID || "ip3AKeUOG-o");
