@@ -107,30 +107,34 @@ export default function Home() {
     }
   };
 
+  // Get the YouTube API key from the environment at build time
+  const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY as string;
+
   async function getVideoTitle(videoId: string) {
-    const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+    const apiKey = YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return ["Unknown Title", ""];
+    }
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`;
     const response = await fetch(url, { headers: { Accept: "application/json" } });
     const data = await response.json();
-    return [data.items[0]?.snippet?.title, data.items[0]?.snippet?.thumbnails?.standard?.url || ""];
+    return [data.items?.[0]?.snippet?.title ?? "Unknown Title", data.items?.[0]?.snippet?.thumbnails?.standard?.url || ""];
   }
 
   async function getVideoDuration(videoId: string) {
-    const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+    const apiKey = YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return 0;
+    }
     const url = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${apiKey}`;
     const response = await fetch(url, { headers: { Accept: "application/json" } });
     const data = await response.json();
-    const durString = data.items[0]?.contentDetails?.duration;
-    const splitparts = durString.split("PT")[1].split("M");
-    const mins = parseInt(splitparts[0]);
-    const secs = parseInt(splitparts[1].replace("S", ""));
-    if (isNaN(mins) && isNaN(secs)) {
-      return 0;
-    } else if (isNaN(mins)) {
-      return secs;
-    } else if (isNaN(secs)) {
-      return mins * 60;
-    }
+    const durString = data.items?.[0]?.contentDetails?.duration;
+    if (!durString) return 0;
+    // Parse ISO 8601 duration (e.g., PT2M10S)
+    const match = durString.match(/PT(?:(\d+)M)?(?:(\d+)S)?/);
+    const mins = match && match[1] ? parseInt(match[1]) : 0;
+    const secs = match && match[2] ? parseInt(match[2]) : 0;
     return mins * 60 + secs;
   }
 
