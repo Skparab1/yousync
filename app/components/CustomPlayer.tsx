@@ -222,7 +222,7 @@ export default function CustomPlayer({ videoID, sessionID, simple, volume }: Cus
                             <img
                                 src="https://www.creativefabrica.com/wp-content/uploads/2020/03/16/CD-icon-vector-Graphics-3664529-1.jpg"
                                 alt="CD Icon"
-                                className="w-128 h-128 object-contain"
+                                className="w-100 h-100 object-contain"
                                 style={{ pointerEvents: "none" }}
                             />
                         </div>
